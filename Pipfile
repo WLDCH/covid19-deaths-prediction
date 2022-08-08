@@ -1,0 +1,19 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+darts = "*"
+mlflow = "*"
+prefect = "==2.0b15"
+pandas = "*"
+scikit-learn = "*"
+numpy = "*"
+seaborn = "*"
+
+[dev-packages]
+ipykernel = "*"
+
+[requires]
+python_version = "3.9"
