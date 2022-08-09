@@ -11,6 +11,8 @@ pandas = "*"
 scikit-learn = "*"
 numpy = "*"
 seaborn = "*"
+isort = "*"
+black = "*"
 
 [dev-packages]
 ipykernel = "*"
