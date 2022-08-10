@@ -13,6 +13,8 @@ numpy = "*"
 seaborn = "*"
 isort = "*"
 black = "*"
+beautifulsoup4 = "*"
+selenium = "*"
 
 [dev-packages]
 ipykernel = "*"
