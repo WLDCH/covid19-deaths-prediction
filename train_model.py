@@ -12,11 +12,11 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from darts import TimeSeries
+from darts.dataprocessing.transformers import Scaler
 from darts.models import (AutoARIMA, BlockRNNModel, ExponentialSmoothing,
                           NBEATSModel, NHiTSModel, RandomForest,
                           RegressionModel, TCNModel, TFTModel,
                           TransformerModel)
-from darts.dataprocessing.transformers import Scaler
 from prefect import flow, task
 from prefect.task_runners import SequentialTaskRunner
 from selenium import webdriver
@@ -31,6 +31,24 @@ mlflow.set_experiment("covid-deaths-prediction")
 
 
 length_pred = 14
+features_indicator = [
+    "hosp",
+    "incid_hosp",
+    "rea",
+    "incid_rea",
+    "rad",
+    "incid_rad",
+    "pos",
+    "pos_7j",
+    "tx_pos",
+    "tx_incid",
+    "TO",
+    "R",
+]
+features_test = ["pop", "P", "T", "Ti", "Tp", "Td"]
+features = features_indicator + features_test
+target = ["incid_dchosp"]
+
 
 @task
 def scrap_covid_indicator():
@@ -91,7 +109,7 @@ def read_data(covid_indicator_path=None, covid_test_path=None):
 
 
 @task
-def preprocess_data(covid_indicator_df, covid_test_df):
+def preprocess_data(covid_indicator_df, covid_test_df, features=features, target=target):
 
     covid_test_df.loc[:, features_test] = covid_test_df.loc[:, features_test].applymap(
         lambda row: float(row.replace(",", "."))
@@ -110,15 +128,14 @@ def preprocess_data(covid_indicator_df, covid_test_df):
         lambda row: datetime.datetime.strptime(row, "%Y-%m-%d")
     )
     covid_df.set_index("date", inplace=True)
-
-    scaler = Scaler()
     return covid_df
 
+
 @task
-def create_preprocess_time_series(covid_df):
+def create_preprocess_time_series(covid_df, features=features, target=target):
     y = TimeSeries.from_series(covid_df[target])
     past_cov = TimeSeries.from_dataframe(covid_df[features])
-    
+
     target_scaler = Scaler()
     past_cov_scaler = Scaler()
     y_scaled = target_scaler.fit_transform(y)
@@ -136,7 +153,15 @@ def create_preprocess_time_series(covid_df):
     # past_cov_train_scaled = past_cov_scaler.fit_transform(past_cov_scaled_train)
     # past_cov_val_scaled = past_cov_scaler.transform(past_cov_val)
 
-    return (y_scaled, y_train, y_val, past_cov_train, past_cov_val, target_scaler, past_cov_scaler)
+    return (
+        y_scaled,
+        y_train,
+        y_val,
+        past_cov_train,
+        past_cov_val,
+        target_scaler,
+        past_cov_scaler,
+    )
 
 
 @task
@@ -154,13 +179,29 @@ def train_model(y, y_train, y_val, past_cov_train, past_cov_val, model_name):
             lags_past_covariates=[-1, -2, -3, -4, -5, -6, -7],
         )
     elif model_name == "N-BEATS":
-        model = NBEATSModel(input_chunk_length=length_pred, output_chunk_length=length_pred,)
+        model = NBEATSModel(
+            input_chunk_length=length_pred, output_chunk_length=length_pred,
+        )
     elif model_name == "N-HiTS":
-        model = NHiTSModel(input_chunk_length=length_pred, output_chunk_length=length_pred,)
+        model = NHiTSModel(
+            input_chunk_length=length_pred, output_chunk_length=length_pred,
+        )
     elif model_name == "TCN":
-        model = TCNModel(input_chunk_length=length_pred+1, output_chunk_length=length_pred,)
+        model = TCNModel(
+            input_chunk_length=length_pred + 1, output_chunk_length=length_pred,
+        )
     elif model_name == "Transformer":
-        model = TransformerModel(input_chunk_length=length_pred, output_chunk_length=length_pred,)
+        model = TransformerModel(
+            input_chunk_length=length_pred, output_chunk_length=length_pred,
+        )
+    elif model_name == "RNN":
+        model = BlockRNNModel(
+            input_chunk_length=length_pred, output_chunk_length=length_pred, model='RNN'
+        )
+    elif model_name == "LSTM":
+        model = BlockRNNModel(
+            input_chunk_length=length_pred, output_chunk_length=length_pred, model='LSTM'
+        )
 
     model.fit(series=y_train, past_covariates=past_cov_train)
     y_pred = model.predict(n=len(y_val), series=y_train, past_covariates=past_cov_val)
@@ -170,7 +211,7 @@ def train_model(y, y_train, y_val, past_cov_train, past_cov_val, model_name):
 
 @task
 def compute_metrics(y_pred, y_val, model_name, input_chunk_length, output_chunk_length):
-    
+
     mae = mean_absolute_error(y_val.values().reshape(-1), y_pred.values().reshape(-1))
     mse = mean_squared_error(y_val.values().reshape(-1), y_pred.values().reshape(-1))
     mlflow.log_metrics({"mae": mae, "mse": mse})
@@ -182,6 +223,7 @@ def compute_metrics(y_pred, y_val, model_name, input_chunk_length, output_chunk_
         }
     )
 
+
 @task
 def plot(y, y_pred, model_name):
     plt.figure()
@@ -189,10 +231,11 @@ def plot(y, y_pred, model_name):
     y[-30:].plot(label="Real deaths")
     plt.legend()
     plt.title(f"Deaths prediction vs groundtruth - {model_name} model")
-    plt.savefig("fig/pred_true_plot.png")
+    plt.savefig(f"fig/{model_name}_pred_true_plot.png")
     plt.close()
     mlflow.log_artifact(
-        local_path="fig/pred_true_plot.png", artifact_path="pred_true_plot.png"
+        local_path=f"fig/{model_name}_pred_true_plot.png",
+        artifact_path=f"{model_name}_pred_true_plot.png",
     )
 
 
@@ -204,29 +247,11 @@ def main(
     covid_indicator_path=None,
     covid_test_path=None,
 ):
-    with mlflow.start_run(run_name=f'{model_name}_run'):
-        global features_indicator
-        global features_test
-        global features
-        global target
-
-        features_indicator = [
-            "hosp",
-            "incid_hosp",
-            "rea",
-            "incid_rea",
-            "rad",
-            "incid_rad",
-            "pos",
-            "pos_7j",
-            "tx_pos",
-            "tx_incid",
-            "TO",
-            "R",
-        ]
-        features_test = ["pop", "P", "T", "Ti", "Tp", "Td"]
-        features = features_indicator + features_test
-        target = ["incid_dchosp"]
+    with mlflow.start_run(run_name=f"{model_name}_run"):
+        # global features_indicator
+        # global features_test
+        # global features
+        # global target
 
         covid_indicator_df, covid_test_df = read_data(
             covid_indicator_path, covid_test_path
@@ -234,14 +259,32 @@ def main(
 
         covid_df = preprocess_data(covid_indicator_df, covid_test_df)
 
-        y, y_train, y_val, past_cov_train, past_cov_val, target_scaler, past_cov_scaler = create_preprocess_time_series(covid_df=covid_df)
+        (
+            y,
+            y_train,
+            y_val,
+            past_cov_train,
+            past_cov_val,
+            target_scaler,
+            past_cov_scaler,
+        ) = create_preprocess_time_series(covid_df=covid_df)
 
         model, y_pred = train_model(
             y, y_train, y_val, past_cov_train, past_cov_val, model_name
         )
-        y, y_pred, y_val = target_scaler.inverse_transform(y), target_scaler.inverse_transform(y_pred), target_scaler.inverse_transform(y_val)
+        y, y_pred, y_val = (
+            target_scaler.inverse_transform(y),
+            target_scaler.inverse_transform(y_pred),
+            target_scaler.inverse_transform(y_val),
+        )
 
-        compute_metrics(y_pred=y_pred, y_val=y_val, input_chunk_length=input_chunk_length, output_chunk_length=output_chunk_length, model_name=model_name)
+        compute_metrics(
+            y_pred=y_pred,
+            y_val=y_val,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            model_name=model_name,
+        )
         plot(y, y_pred, model_name)
 
 
@@ -249,6 +292,8 @@ if __name__ == "__main__":
     # main(model_name='RegressionModel')
     # main(model_name='RandomForest')
     # main(model_name="N-BEATS")
-    main(model_name='N-HiTS')
-    main(model_name='TCN')
-    main(model_name='Transformer')
+    # main(model_name="N-HiTS")
+    # main(model_name="TCN")
+    # main(model_name="Transformer")
+    # main(model_name='RNN')
+    main(model_name='LSTM')
