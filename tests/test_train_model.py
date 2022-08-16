@@ -27,7 +27,7 @@ def test_scrap_covid_test():
 
 def test_preprocess_data():
 
-    expected_df = pd.read_csv('data/covid_df.csv').dropna()
+    expected_df = pd.read_csv('data/covid_df.csv', index_col='date')
     covid_indicator = pd.read_csv('data/table-indicateurs-open-data-france-2022-08-05-19h01.csv')
     covid_test = pd.read_csv('data/sp-fra-jour-2022-08-05-19h01.csv', sep=';')
     actual_df = train_model.preprocess_data.fn(covid_indicator_df=covid_indicator, covid_test_df=covid_test)
