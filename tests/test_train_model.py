@@ -38,7 +38,6 @@ def test_preprocess_data():
 def test_create_preprocess_time_series():
 
     covid_df = pd.read_csv('data/covid_df.csv')
-    target = ["incid_dchosp"]
     (y_scaled,
     y_train,
     y_val,
@@ -48,4 +47,6 @@ def test_create_preprocess_time_series():
     past_cov_scaler) =  train_model.create_preprocess_time_series.fn(covid_df) 
 
     assert y_scaled == y_train.concatenate(y_val)
-    # assert (y_scaled <= 1) & (y_scaled >= 0)
+    assert np.all(y_scaled <= 1) & np.all(y_scaled >= 0)
+    assert np.all(y_train <= 1) & np.all(y_train >= 0)
+    assert np.all(y_val <= 1) & np.all(y_val >= 0)
