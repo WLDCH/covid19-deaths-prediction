@@ -5,6 +5,8 @@ import matplotlib as mpl
 mpl.use("Agg")
 
 
+import pickle
+
 import matplotlib.pyplot as plt
 import mlflow
 import numpy as np
@@ -13,10 +15,18 @@ import requests
 from bs4 import BeautifulSoup
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
-from darts.models import (AutoARIMA, BlockRNNModel, ExponentialSmoothing,
-                          NBEATSModel, NHiTSModel, RandomForest,
-                          RegressionModel, TCNModel, TFTModel,
-                          TransformerModel)
+from darts.models import (
+    AutoARIMA,
+    BlockRNNModel,
+    ExponentialSmoothing,
+    NBEATSModel,
+    NHiTSModel,
+    RandomForest,
+    RegressionModel,
+    TCNModel,
+    TFTModel,
+    TransformerModel,
+)
 from prefect import flow, task
 from prefect.task_runners import SequentialTaskRunner
 from selenium import webdriver
@@ -109,7 +119,9 @@ def read_data(covid_indicator_path=None, covid_test_path=None):
 
 
 @task
-def preprocess_data(covid_indicator_df, covid_test_df, features=features, target=target):
+def preprocess_data(
+    covid_indicator_df, covid_test_df, features=features, target=target
+):
 
     covid_test_df.loc[:, features_test] = covid_test_df.loc[:, features_test].applymap(
         lambda row: float(row.replace(",", "."))
@@ -132,7 +144,7 @@ def preprocess_data(covid_indicator_df, covid_test_df, features=features, target
 
 
 @task
-def create_preprocess_time_series(covid_df, features=features, target=target):
+def create_preprocess_time_series_train_val(covid_df, features=features, target=target):
     y = TimeSeries.from_series(covid_df[target])
     past_cov = TimeSeries.from_dataframe(covid_df[features])
 
@@ -167,10 +179,10 @@ def create_preprocess_time_series(covid_df, features=features, target=target):
 @task
 def train_model(y, y_train, y_val, past_cov_train, past_cov_val, model_name):
 
-    if model_name == "RegressionModel":
+    if model_name == "Regression":
         model = RegressionModel(
             lags=[-1, -2, -3, -4, -5, -6, -7],
-            lags_past_covariates=[-1, -2, -3, -4, -5, -6, -7],
+            lags_past_covariates=[-1],  # , -2, -3, -4, -5, -6, -7],
             model=RandomForestRegressor(),
         )
     elif model_name == "RandomForest":
@@ -180,31 +192,39 @@ def train_model(y, y_train, y_val, past_cov_train, past_cov_val, model_name):
         )
     elif model_name == "N-BEATS":
         model = NBEATSModel(
-            input_chunk_length=length_pred, output_chunk_length=length_pred,
+            input_chunk_length=length_pred,
+            output_chunk_length=length_pred,
         )
     elif model_name == "N-HiTS":
         model = NHiTSModel(
-            input_chunk_length=length_pred, output_chunk_length=length_pred,
+            input_chunk_length=length_pred,
+            output_chunk_length=length_pred,
         )
     elif model_name == "TCN":
         model = TCNModel(
-            input_chunk_length=length_pred + 1, output_chunk_length=length_pred,
+            input_chunk_length=length_pred + 1,
+            output_chunk_length=length_pred,
         )
     elif model_name == "Transformer":
         model = TransformerModel(
-            input_chunk_length=length_pred, output_chunk_length=length_pred,
+            input_chunk_length=length_pred,
+            output_chunk_length=length_pred,
         )
     elif model_name == "RNN":
         model = BlockRNNModel(
-            input_chunk_length=length_pred, output_chunk_length=length_pred, model='RNN'
+            input_chunk_length=length_pred, output_chunk_length=length_pred, model="RNN"
         )
     elif model_name == "LSTM":
         model = BlockRNNModel(
-            input_chunk_length=length_pred, output_chunk_length=length_pred, model='LSTM'
+            input_chunk_length=length_pred,
+            output_chunk_length=length_pred,
+            model="LSTM",
         )
 
     model.fit(series=y_train, past_covariates=past_cov_train)
-    y_pred = model.predict(n=len(y_val), series=y_train, past_covariates=past_cov_val)
+    y_pred = model.predict(
+        n=length_pred, series=y_train, past_covariates=past_cov_train
+    )
 
     return (model, y_pred)
 
@@ -267,7 +287,7 @@ def main(
             past_cov_val,
             target_scaler,
             past_cov_scaler,
-        ) = create_preprocess_time_series(covid_df=covid_df)
+        ) = create_preprocess_time_series_train_val(covid_df=covid_df)
 
         model, y_pred = train_model(
             y, y_train, y_val, past_cov_train, past_cov_val, model_name
@@ -286,14 +306,17 @@ def main(
             model_name=model_name,
         )
         plot(y, y_pred, model_name)
+        model.save(f"models/{model_name}Model")
+        with open(f"models/scalers", "wb") as f_out:
+            pickle.dump((target_scaler, past_cov_scaler), f_out)
 
 
 if __name__ == "__main__":
-    # main(model_name='RegressionModel')
+    main(model_name="Regression")
     # main(model_name='RandomForest')
     # main(model_name="N-BEATS")
     # main(model_name="N-HiTS")
     # main(model_name="TCN")
-    # main(model_name="Transformer")
+    main(model_name="Transformer")
     # main(model_name='RNN')
-    main(model_name='LSTM')
+    # main(model_name='LSTM')
