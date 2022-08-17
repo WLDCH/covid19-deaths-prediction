@@ -15,18 +15,10 @@ import requests
 from bs4 import BeautifulSoup
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
-from darts.models import (
-    AutoARIMA,
-    BlockRNNModel,
-    ExponentialSmoothing,
-    NBEATSModel,
-    NHiTSModel,
-    RandomForest,
-    RegressionModel,
-    TCNModel,
-    TFTModel,
-    TransformerModel,
-)
+from darts.models import (AutoARIMA, BlockRNNModel, ExponentialSmoothing,
+                          NBEATSModel, NHiTSModel, RandomForest,
+                          RegressionModel, TCNModel, TFTModel,
+                          TransformerModel)
 from prefect import flow, task
 from prefect.task_runners import SequentialTaskRunner
 from selenium import webdriver
@@ -312,7 +304,7 @@ def main(
 
 
 if __name__ == "__main__":
-    main(model_name="Regression")
+    # main(model_name="Regression")
     # main(model_name='RandomForest')
     # main(model_name="N-BEATS")
     # main(model_name="N-HiTS")
