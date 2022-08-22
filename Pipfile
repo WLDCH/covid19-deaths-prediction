@@ -15,6 +15,7 @@ isort = "*"
 black = "*"
 beautifulsoup4 = "*"
 selenium = "*"
+plotly = "*"
 
 [dev-packages]
 ipykernel = "*"
