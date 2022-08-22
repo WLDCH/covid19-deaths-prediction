@@ -42,8 +42,7 @@ features_indicator = [
     "pos_7j",
     "tx_pos",
     "tx_incid",
-    "TO",
-    "R",
+    "TO"
 ]
 features_test = ["pop", "P", "T", "Ti", "Tp", "Td"]
 features = features_indicator + features_test
@@ -74,7 +73,6 @@ def predict(model, y, past_cov, target_scaler, past_cov_scaler):
 @flow(name="predict_flow")
 def main(covid_indicator_path=None, covid_test_path=None):
     covid_indicator_df, covid_test_df = read_data(covid_indicator_path, covid_test_path)
-
     covid_df = preprocess_data(covid_indicator_df, covid_test_df)
 
     y, past_cov, target_scaler, past_cov_scaler = create_preprocess_time_series(
@@ -85,9 +83,10 @@ def main(covid_indicator_path=None, covid_test_path=None):
     # with open(f"models/{model_name}", "rb") as f_in:
     #     model = pickle.load(f_in)
     model = TransformerModel.load(f"models/{model_name}")
-
+    print(covid_indicator_df)
     y_pred = predict(model, y, past_cov, target_scaler, past_cov_scaler)
-    return y_pred
+    y = target_scaler.inverse_transform(y)
+    return y, y_pred
 
-
-print(main())
+if __name__ == '__main__':
+    print(main())

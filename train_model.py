@@ -44,9 +44,7 @@ features_indicator = [
     "pos_7j",
     "tx_pos",
     "tx_incid",
-    "TO",
-    "R",
-]
+    "TO",]
 features_test = ["pop", "P", "T", "Ti", "Tp", "Td"]
 features = features_indicator + features_test
 target = ["incid_dchosp"]
