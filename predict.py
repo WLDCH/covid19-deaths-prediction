@@ -83,7 +83,6 @@ def main(covid_indicator_path=None, covid_test_path=None):
     # with open(f"models/{model_name}", "rb") as f_in:
     #     model = pickle.load(f_in)
     model = TransformerModel.load(f"models/{model_name}")
-    print(covid_indicator_df)
     y_pred = predict(model, y, past_cov, target_scaler, past_cov_scaler)
     y = target_scaler.inverse_transform(y)
     return y, y_pred
