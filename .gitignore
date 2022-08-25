@@ -1,0 +1,7 @@
+__pycache__
+mlruns
+
+*.zip
+*.deb
+*.db
+*.ipynb
