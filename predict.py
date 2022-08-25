@@ -1,34 +1,10 @@
-import datetime
-
-import matplotlib as mpl
-
-mpl.use("Agg")
-
-import pickle
-
-import matplotlib.pyplot as plt
-import mlflow
-import numpy as np
-import pandas as pd
-import requests
-from bs4 import BeautifulSoup
-from darts import TimeSeries
-from darts.dataprocessing.transformers import Scaler
 from darts.models import (AutoARIMA, BlockRNNModel, ExponentialSmoothing,
                           NBEATSModel, NHiTSModel, RandomForest,
                           RegressionModel, TCNModel, TFTModel,
                           TransformerModel)
-from prefect import flow, task
-from prefect.task_runners import SequentialTaskRunner
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-from webdriver_manager.chrome import ChromeDriverManager
+from prefect import flow
 
-from utils.read_preprocess import (preprocess_data, read_data, scrap_covid_indicator,
-                         scrap_covid_test)
+from utils.read_preprocess import (preprocess_data, read_data)
 from utils.predict_utils import create_preprocess_time_series, predict
 
 @flow(name="predict_flow")
