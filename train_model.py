@@ -7,164 +7,20 @@ mpl.use("Agg")
 
 import pickle
 
-import matplotlib.pyplot as plt
 import mlflow
-import numpy as np
-import pandas as pd
-import requests
-from bs4 import BeautifulSoup
-from darts import TimeSeries
-from darts.dataprocessing.transformers import Scaler
-from darts.models import (AutoARIMA, BlockRNNModel, ExponentialSmoothing,
+from darts.models import (BlockRNNModel,
                           NBEATSModel, NHiTSModel, RandomForest,
-                          RegressionModel, TCNModel, TFTModel,
+                          RegressionModel, TCNModel,
                           TransformerModel)
 from prefect import flow, task
-from prefect.task_runners import SequentialTaskRunner
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-from webdriver_manager.chrome import ChromeDriverManager
 
-mlflow.set_tracking_uri("sqlite:///mlflow.db")
-mlflow.set_experiment("covid-deaths-prediction")
+from utils.read_preprocess import read_data, preprocess_data
+from utils.train_utils import create_preprocess_time_series_train_val, compute_metrics, plot
+from utils.variables import EXPERIMENT_NAME, TRACKING_URI, length_pred, features_indicator, features_test, features, target
 
-
-length_pred = 14
-features_indicator = [
-    "hosp",
-    "incid_hosp",
-    "rea",
-    "incid_rea",
-    "rad",
-    "incid_rad",
-    "pos",
-    "pos_7j",
-    "tx_pos",
-    "tx_incid",
-    "TO",]
-features_test = ["pop", "P", "T", "Ti", "Tp", "Td"]
-features = features_indicator + features_test
-target = ["incid_dchosp"]
-
-
-@task
-def scrap_covid_indicator():
-    # Scraps covid_indicator dataset
-    covid_indicator_page = requests.get(
-        "https://www.data.gouv.fr/fr/datasets/synthese-des-indicateurs-de-suivi-de-lepidemie-covid-19/"
-    )
-    soup_indicator = BeautifulSoup(covid_indicator_page.content, "html.parser")
-    covid_indicator_path = soup_indicator.find_all(
-        "dd",
-        {"class": "fr-ml-0 fr-col-8 fr-col-md-9 fr-col-lg-10 text-overflow-ellipsis"},
-    )[-1].find("a", href=True)["href"]
-    covid_indicator_df = pd.read_csv(covid_indicator_path)
-
-    return covid_indicator_df
-
-
-@task
-def scrap_covid_test():
-    # Scraps covid_test dataset
-    options = Options()
-    options.headless = True
-    # driver = webdriver.Chrome("/usr/bin/chromedriver", options=options)
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
-
-    driver.implicitly_wait(0.5)
-    driver.get(
-        "https://www.data.gouv.fr/fr/datasets/donnees-de-laboratoires-pour-le-depistage-a-compter-du-18-05-2022-si-dep/"
-    )
-    bt = driver.find_element(
-        by="xpath",
-        value="//*[@id='app']/main/section[4]/div/div/section[1]/div/nav/ul/li[4]/a",
-    )
-    bt.click()
-    pa = driver.find_element(
-        by="xpath",
-        value="//*[@id='resource-4e8d826a-d2a1-4d69-9ed0-b18a1f3d5ce2']/dl/div[2]/dd/a",
-    )
-    covid_test_path = pa.get_attribute("href")
-    covid_test = pd.read_csv(covid_test_path, sep=";")
-    driver.quit()
-
-    return covid_test
-
-
-@flow
-def read_data(covid_indicator_path=None, covid_test_path=None):
-    if covid_indicator_path is None:
-        covid_indicator_df = scrap_covid_indicator()
-    else:
-        covid_indicator_df = pd.read_csv(covid_indicator_path)
-
-    if covid_test_path is None:
-        covid_test_df = scrap_covid_test()
-    else:
-        covid_test_df = pd.read_csv(covid_test_path, sep=";")
-    return (covid_indicator_df, covid_test_df)
-
-
-@task
-def preprocess_data(
-    covid_indicator_df, covid_test_df, features=features, target=target
-):
-
-    covid_test_df.loc[:, features_test] = covid_test_df.loc[:, features_test].applymap(
-        lambda row: float(row.replace(",", "."))
-    )
-
-    covid_df = pd.merge(
-        left=covid_indicator_df,
-        right=covid_test_df,
-        left_on="date",
-        right_on="jour",
-        how="inner",
-    )
-
-    covid_df = covid_df[["date"] + features + target].dropna()
-    covid_df.loc[:, "date"] = covid_df.date.apply(
-        lambda row: datetime.datetime.strptime(row, "%Y-%m-%d")
-    )
-    covid_df.set_index("date", inplace=True)
-    return covid_df
-
-
-@task
-def create_preprocess_time_series_train_val(covid_df, features=features, target=target):
-    y = TimeSeries.from_series(covid_df[target])
-    past_cov = TimeSeries.from_dataframe(covid_df[features])
-
-    target_scaler = Scaler()
-    past_cov_scaler = Scaler()
-    y_scaled = target_scaler.fit_transform(y)
-    past_cov_scaled = past_cov_scaler.fit_transform(past_cov)
-
-    y_train = y_scaled[:-length_pred]
-    y_val = y_scaled[-length_pred:]
-    past_cov_train = past_cov_scaled[:-length_pred]
-    past_cov_val = past_cov_scaled
-
-    # target_scaler = Scaler()
-    # past_cov_scaler = Scaler()
-    # y_train_scaled = target_scaler.fit_transform(y_train)
-    # y_val_scaled = target_scaler.transform(y_val)
-    # past_cov_train_scaled = past_cov_scaler.fit_transform(past_cov_scaled_train)
-    # past_cov_val_scaled = past_cov_scaler.transform(past_cov_val)
-
-    return (
-        y_scaled,
-        y_train,
-        y_val,
-        past_cov_train,
-        past_cov_val,
-        target_scaler,
-        past_cov_scaler,
-    )
-
+mlflow.set_tracking_uri(TRACKING_URI)
+mlflow.set_experiment(EXPERIMENT_NAME)
 
 @task
 def train_model(y, y_train, y_val, past_cov_train, past_cov_val, model_name):
@@ -219,34 +75,6 @@ def train_model(y, y_train, y_val, past_cov_train, past_cov_val, model_name):
     return (model, y_pred)
 
 
-@task
-def compute_metrics(y_pred, y_val, model_name, input_chunk_length, output_chunk_length):
-
-    mae = mean_absolute_error(y_val.values().reshape(-1), y_pred.values().reshape(-1))
-    mse = mean_squared_error(y_val.values().reshape(-1), y_pred.values().reshape(-1))
-    mlflow.log_metrics({"mae": mae, "mse": mse})
-    mlflow.log_params(
-        {
-            "input_chunk_length": input_chunk_length,
-            "output_chunk_length": output_chunk_length,
-            "model_name": model_name,
-        }
-    )
-
-
-@task
-def plot(y, y_pred, model_name):
-    plt.figure()
-    y_pred.plot(label="Deaths predictions")
-    y[-30:].plot(label="Real deaths")
-    plt.legend()
-    plt.title(f"Deaths prediction vs groundtruth - {model_name} model")
-    plt.savefig(f"fig/{model_name}_pred_true_plot.png")
-    plt.close()
-    mlflow.log_artifact(
-        local_path=f"fig/{model_name}_pred_true_plot.png",
-        artifact_path=f"{model_name}_pred_true_plot.png",
-    )
 
 
 @flow

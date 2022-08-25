@@ -26,27 +26,26 @@ from selenium.webdriver.chrome.service import Service
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from webdriver_manager.chrome import ChromeDriverManager
+from utils.variables import EXPERIMENT_NAME, TRACKING_URI, length_pred, features_indicator, features_test, features, target
 
-from utils.read_preprocess import (preprocess_data, read_data, scrap_covid_indicator,
-                         scrap_covid_test)
-from utils.predict_utils import create_preprocess_time_series, predict
 
-@flow(name="predict_flow")
-def main(covid_indicator_path=None, covid_test_path=None):
-    covid_indicator_df, covid_test_df = read_data(covid_indicator_path, covid_test_path)
-    covid_df = preprocess_data(covid_indicator_df, covid_test_df)
+@task
+def create_preprocess_time_series(covid_df):
+    y = TimeSeries.from_series(covid_df[target])
+    past_cov = TimeSeries.from_dataframe(covid_df[features])
 
-    y, past_cov, target_scaler, past_cov_scaler = create_preprocess_time_series(
-        covid_df
-    )
+    with open("models/scalers", "rb") as f_in:
+        target_scaler, past_cov_scaler = pickle.load(f_in)
 
-    model_name = "TransformerModel"
-    # with open(f"models/{model_name}", "rb") as f_in:
-    #     model = pickle.load(f_in)
-    model = TransformerModel.load(f"models/{model_name}")
-    y_pred = predict(model, y, past_cov, target_scaler, past_cov_scaler)
-    y = target_scaler.inverse_transform(y)
-    return y, y_pred
+    y_scaled = target_scaler.transform(y)
+    past_cov_scaled = past_cov_scaler.transform(past_cov)
 
-if __name__ == '__main__':
-    print(main())
+    return (y_scaled, past_cov_scaled, target_scaler, past_cov_scaler)
+
+
+
+@task
+def predict(model, y, past_cov, target_scaler, past_cov_scaler):
+    y_pred = model.predict(n=length_pred, series=y, past_covariates=past_cov)
+
+    return np.round(target_scaler.inverse_transform(y_pred).pd_dataframe()).astype(int)
