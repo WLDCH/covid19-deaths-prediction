@@ -1,14 +1,17 @@
-
-
 import matplotlib.pyplot as plt
 import mlflow
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from prefect import task
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error
-from webdriver_manager.chrome import ChromeDriverManage
-from utils.variables import EXPERIMENT_NAME, TRACKING_URI, length_pred, features_indicator, features_test, features, target
+
+from utils.variables import (
+    features,
+    features_indicator,
+    features_test,
+    length_pred,
+    target,
+)
 
 
 @task
@@ -42,6 +45,7 @@ def create_preprocess_time_series_train_val(covid_df, features=features, target=
         target_scaler,
         past_cov_scaler,
     )
+
 
 @task
 def compute_metrics(y_pred, y_val, model_name, input_chunk_length, output_chunk_length):

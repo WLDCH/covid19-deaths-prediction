@@ -1,4 +1,3 @@
-
 length_pred = 14
 
 features_indicator = [
@@ -12,7 +11,8 @@ features_indicator = [
     "pos_7j",
     "tx_pos",
     "tx_incid",
-    "TO",]
+    "TO",
+]
 
 features_test = ["pop", "P", "T", "Ti", "Tp", "Td"]
 
@@ -20,5 +20,7 @@ features = features_indicator + features_test
 
 target = ["incid_dchosp"]
 
-TRACKING_URI = "sqlite:///mlflow.db"
+# TRACKING_URI = "sqlite:///mlflow.db"
+TRACKING_SERVER_HOST = "34.77.171.28"
+TRACKING_URI = f"http://{TRACKING_SERVER_HOST}:5000"
 EXPERIMENT_NAME = "covid-deaths-prediction"

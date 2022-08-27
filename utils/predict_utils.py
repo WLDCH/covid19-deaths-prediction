@@ -14,10 +14,18 @@ import requests
 from bs4 import BeautifulSoup
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
-from darts.models import (AutoARIMA, BlockRNNModel, ExponentialSmoothing,
-                          NBEATSModel, NHiTSModel, RandomForest,
-                          RegressionModel, TCNModel, TFTModel,
-                          TransformerModel)
+from darts.models import (
+    AutoARIMA,
+    BlockRNNModel,
+    ExponentialSmoothing,
+    NBEATSModel,
+    NHiTSModel,
+    RandomForest,
+    RegressionModel,
+    TCNModel,
+    TFTModel,
+    TransformerModel,
+)
 from prefect import flow, task
 from prefect.task_runners import SequentialTaskRunner
 from selenium import webdriver
@@ -26,7 +34,16 @@ from selenium.webdriver.chrome.service import Service
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from webdriver_manager.chrome import ChromeDriverManager
-from utils.variables import EXPERIMENT_NAME, TRACKING_URI, length_pred, features_indicator, features_test, features, target
+
+from utils.variables import (
+    EXPERIMENT_NAME,
+    TRACKING_URI,
+    features,
+    features_indicator,
+    features_test,
+    length_pred,
+    target,
+)
 
 
 @task
@@ -41,7 +58,6 @@ def create_preprocess_time_series(covid_df):
     past_cov_scaled = past_cov_scaler.transform(past_cov)
 
     return (y_scaled, past_cov_scaled, target_scaler, past_cov_scaler)
-
 
 
 @task

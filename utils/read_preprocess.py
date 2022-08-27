@@ -1,3 +1,5 @@
+import datetime
+
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
@@ -6,8 +8,16 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-from utils.variables import EXPERIMENT_NAME, TRACKING_URI, length_pred, features_indicator, features_test, features, target
-import datetime
+
+from utils.variables import (
+    EXPERIMENT_NAME,
+    TRACKING_URI,
+    features,
+    features_indicator,
+    features_test,
+    length_pred,
+    target,
+)
 
 
 @task
@@ -91,4 +101,3 @@ def preprocess_data(
     )
     covid_df.set_index("date", inplace=True)
     return covid_df
-

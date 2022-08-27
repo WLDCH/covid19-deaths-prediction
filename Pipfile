@@ -16,6 +16,8 @@ black = "*"
 beautifulsoup4 = "*"
 selenium = "*"
 plotly = "*"
+google-cloud-storage = "*"
+webdriver-manager = "*"
 
 [dev-packages]
 ipykernel = "*"
@@ -24,9 +26,10 @@ isort = "*"
 pylint = "*"
 deepdiff = "*"
 pytest = "*"
+pre-commit = "*"
 
 [requires]
-python_version = "3.9"
+python_version = "3.8"
 
 [pipenv]
 allow_prereleases = true
