@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 darts = "*"
 mlflow = "==1.28.0"
-prefect = "==2.0b15"
+prefect = "==2.2.0"
 pandas = "*"
 scikit-learn = "*"
 numpy = "*"
