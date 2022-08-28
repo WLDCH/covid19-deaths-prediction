@@ -1,3 +1,11 @@
+from darts.models import (
+    BlockRNNModel,
+    NBEATSModel,
+    NHiTSModel,
+    TCNModel,
+    TransformerModel,
+)
+
 length_pred = 14
 
 features_indicator = [
@@ -19,6 +27,16 @@ features_test = ["pop", "P", "T", "Ti", "Tp", "Td"]
 features = features_indicator + features_test
 
 target = ["incid_dchosp"]
+
+
+model_name_to_model_class = {
+    # 'N-BEATS': NBEATSModel,
+    # 'N-HiTS': NHiTSModel,
+    "TCN": TCNModel,
+    "Transformer": TransformerModel,
+    "RNN": BlockRNNModel,
+    # 'LSTM': BlockRNNModel
+}
 
 # TRACKING_URI = "sqlite:///mlflow.db"
 TRACKING_SERVER_HOST = "34.77.171.28"
