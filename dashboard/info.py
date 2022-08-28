@@ -14,6 +14,6 @@ The data is retrieved and updated every day via data.gouv.fr. The dashboard is u
 
 
 note = """
-The model is retrained every monday at 20h00. Three differents type of Deep Learning model are trained (TCN, RNN and Transformer)
+The model is retrained every monday at 20h00. Three differents type of Deep Learning models are trained (TCN, RNN and Transformer)
 and the best one is choosen each week.
 """
