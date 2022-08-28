@@ -6,10 +6,10 @@ from prefect import flow, task
 
 from utils.predict_utils import create_preprocess_time_series, predict
 from utils.read_preprocess import preprocess_data, read_data
-from utils.variables import EXPERIMENT_NAME, TRACKING_URI, model_name_to_model_class
+from utils.variables import EXPERIMENT_NAME, TRACKING_URI, BUCKET_NAME, model_name_to_model_class
 
 storage_client = storage.Client()
-bucket = storage_client.get_bucket("covid19-deaths-prediction-bucket")
+bucket = storage_client.get_bucket(BUCKET_NAME)
 mlflow.set_tracking_uri(TRACKING_URI)
 mlflow.set_experiment(EXPERIMENT_NAME)
 client = mlflow.client.MlflowClient()

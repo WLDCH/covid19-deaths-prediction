@@ -15,6 +15,7 @@ from utils.train_utils import (
 from utils.variables import (
     EXPERIMENT_NAME,
     TRACKING_URI,
+    BUCKET_NAME,
     features,
     features_indicator,
     features_test,
@@ -23,7 +24,7 @@ from utils.variables import (
 )
 
 storage_client = storage.Client()
-bucket = storage_client.get_bucket("covid19-deaths-prediction-bucket")
+bucket = storage_client.get_bucket(BUCKET_NAME)
 mlflow.set_tracking_uri(TRACKING_URI)
 mlflow.set_experiment(EXPERIMENT_NAME)
 
