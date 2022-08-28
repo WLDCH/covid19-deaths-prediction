@@ -3,4 +3,4 @@ mlflow-ui:
 
 quality-checks:
 		pipenv run black .
-		pipenv run isort .
+		pipenv run isort --profile black .
