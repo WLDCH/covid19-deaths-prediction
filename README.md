@@ -6,13 +6,13 @@ This is my final project for both the MLOps Zoomcamp from Data Talks Club. My co
 
 ## Objective
 
-Covid19 has struck every country in the world since late 2019/early 2020. Over 6M person have died since then, and everyday, new people die from covid19.
+Covid19 has struck every country in the world since late 2019/early 2020. Over 6M people have died since then, and everyday, new people die from covid19.
 
 <b>The goal of this project is to predict the daily number of deaths due to covid19 in the next two weeks in France. </b> The project utilizes MLOps to create a system that predicts the number of deaths due to covid19 and is updated every day. A new model is retrained with new data every Monday at 20:00.
 
 ## Datasets
 
-Two datasets are used in this project. They are scrapped directly from www.data.gouv.fr/. They are updated every day (but Saturday & Sunday) at 19:00, so each day after 19:00 we can update streamlit dashboard to have new predictions.
+Two datasets are used in this project. They are scrapped directly from www.data.gouv.fr/. They are updated every day (except weekends) at 19:00, so each day after 19:00 we can update streamlit dashboard to have new predictions.
 
 * French covid19 indicators synthesis : https://www.data.gouv.fr/fr/datasets/synthese-des-indicateurs-de-suivi-de-lepidemie-covid-19/
   * This dataset includes most of the summary indicators for monitoring the COVID-19 epidemic in France.
@@ -32,14 +32,14 @@ Each time we request a prediction, the script pulls the last model of each DL mo
 
 ## Tools
 
-* Cloud - Google Cloud Platform (Bucket, SQL Storage, VM)
-* Containerization - Docker and Docker Compose
-* Workflow Orchestration - Prefect
-* Data Visualization/Dashboard - Streamlit and Plotly 
-* Model Development, Experiment Tracking, and Registration - Darts and MLflow
-* Model Deployment - Darts and MLflow and Streamlit
-* Tests - Pytest
-* Code formating - Black & isort
+* Cloud - [Google Cloud Platform (Bucket, SQL Storage, VM)](https://www.google.com/cloud)
+* Containerization - [Docker](https://www.docker.com)
+* Workflow Orchestration - [Prefect](https://www.prefect.io/)
+* Data Visualization/Dashboard - [Streamlit](https://streamlit.io/) and [Plotly](https://plotly.com/) 
+* Model Development, Experiment Tracking, and Registration - [Darts](https://unit8co.github.io/darts/) and [MLflow](https://www.mlflow.org/)
+* Model Deployment - [Darts](https://unit8co.github.io/darts/), [Prefect](https://www.prefect.io/),  [MLflow](https://www.mlflow.org/), [Streamlit](https://streamlit.io/)
+* Tests - [Pytest](https://docs.pytest.org/en/7.1.x/)
+* Code formating - [Black](https://github.com/psf/black) & [isort](https://isort.readthedocs.io/en/latest/)
 
 # Dashboard
 
@@ -68,7 +68,7 @@ If you have never set GCP for experiment tracking, you can follow this great tut
 
 If you don't want to use remote tracking server and juste want to run everything locally, you can set the env variables `LOCALLY` to `True` and the script will pull the models from blob_checkpoints (which are models from GCP buckets that I store here on purpose)
 
-# Run dashboard
+## Run dashboard
 
 When everything is set, you can run the streamlit dashboard with `make streamlit-dashboard`
 
