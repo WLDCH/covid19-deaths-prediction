@@ -6,7 +6,7 @@ from prefect import flow, task
 
 from utils.predict_utils import create_preprocess_time_series, predict
 from utils.read_preprocess import preprocess_data, read_data
-from utils.variables import EXPERIMENT_NAME, TRACKING_URI, BUCKET_NAME, model_name_to_model_class
+from utils.variables import EXPERIMENT_NAME, TRACKING_URI, BUCKET_NAME, LOCALLY, model_name_to_model_class
 
 storage_client = storage.Client()
 bucket = storage_client.get_bucket(BUCKET_NAME)
@@ -17,25 +17,28 @@ client = mlflow.client.MlflowClient()
 
 @task
 def load_model(model_name):
-    run_id = dict(client.search_model_versions(f"name='{model_name}Model'")[0])[
-        "run_id"
-    ]
-    blob_model = bucket.blob(f"mlruns/1/{run_id}/artifacts/{model_name}/_model.pth.tar")
-    blob_checkpoints = bucket.blob(
-        f"mlruns/1/{run_id}/artifacts/{model_name}/checkpoints/last-epoch=99.ckpt"
-    )
+    
+    # If we run it locally, we don't fetch models from GCP, we use existing ones located in "block_checkpoints"
+    if not LOCALLY:
+        run_id = dict(client.search_model_versions(f"name='{model_name}Model'")[0])[
+            "run_id"
+        ]
+        blob_model = bucket.blob(f"mlruns/1/{run_id}/artifacts/{model_name}/_model.pth.tar")
+        blob_checkpoints = bucket.blob(
+            f"mlruns/1/{run_id}/artifacts/{model_name}/checkpoints/last-epoch=99.ckpt"
+        )
 
-    if not os.path.exists("blob_checkpoints"):
-        os.mkdir("blob_checkpoints")
-    if not os.path.exists(f"blob_checkpoints/{model_name}"):
-        os.mkdir(f"blob_checkpoints/{model_name}")
-    if not os.path.exists(f"blob_checkpoints/{model_name}/checkpoints/"):
-        os.mkdir(f"blob_checkpoints/{model_name}/checkpoints/")
+        if not os.path.exists("blob_checkpoints"):
+            os.mkdir("blob_checkpoints")
+        if not os.path.exists(f"blob_checkpoints/{model_name}"):
+            os.mkdir(f"blob_checkpoints/{model_name}")
+        if not os.path.exists(f"blob_checkpoints/{model_name}/checkpoints/"):
+            os.mkdir(f"blob_checkpoints/{model_name}/checkpoints/")
 
-    blob_model.download_to_filename(f"blob_checkpoints/{model_name}/_model.pth.tar")
-    blob_checkpoints.download_to_filename(
-        f"blob_checkpoints/{model_name}/checkpoints/last-epoch=99.ckpt"
-    )
+        blob_model.download_to_filename(f"blob_checkpoints/{model_name}/_model.pth.tar")
+        blob_checkpoints.download_to_filename(
+            f"blob_checkpoints/{model_name}/checkpoints/last-epoch=99.ckpt"
+        )
 
     model = model_name_to_model_class[model_name].load_from_checkpoint(
         model_name=model_name, work_dir="blob_checkpoints", best=False
