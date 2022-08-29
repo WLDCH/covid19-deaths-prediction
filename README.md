@@ -17,7 +17,11 @@ Two datasets are used in this project. They are scrapped directly from www.data.
 
 ## MLOps
 
-The project uses tools and concepts from MLOps. Once a week, every Monday at 20:00, three differents models of Deep Learning using Darts library are trained (Transformer, RNN & TCN). We use experiment & model registery with MLFlow with a remote tracking server on GCP. Each time we request a prediction, the script pulls the lasts model of each DL model and take the one with highest MAE.
+The project uses tools and concepts from MLOps. Once a week, every Monday at 20:00, three differents models of Deep Learning using Darts library are trained (Transformer, RNN & TCN). The process is automated with Prefect Deployment.
+
+We use experiment & model registery with MLFlow with a remote tracking server on GCP. We use a VM as tracking server, SQL database as Backend Store and Google Cloud Storage Bucket as Artifact Store.
+
+Each time we request a prediction, the script pulls the last model of each DL model and take the model with lowest MAE.
 
 
 ![MLOps_diagram](fig/MLOps_diagram.png)
@@ -52,9 +56,9 @@ Then you have to setup the environment install packages & dependencies. For this
 
 `make setup`
 
-# Set GCP remote server
+## Set GCP remote server
 
-The next step is to create the remote tracking server with artifacts & backend store. As mentionned before, we use a VM as tracking server, Database as Backend Store & Google Cloud Storage Bucket as Artifact Store. If you already have these three set, you can just set env variables `TRACKING_SERVER_HOST` (remote VM's IP) and `BUCKET_NAME` (self-explanatory) with your own values. 
+The next step is to create the remote tracking server with artifacts & backend store. As mentionned before, we use a VM as tracking server, Database as Backend Store and Google Cloud Storage Bucket as Artifact Store. If you already have these three set, you can just set env variables `TRACKING_SERVER_HOST` (remote VM's IP) and `BUCKET_NAME` (self-explanatory) with your own values. 
 
 If you have never set GCP for experiment tracking, you can follow this great tutorial https://kargarisaac.github.io/blog/mlops/data%20engineering/2022/06/15/MLFlow-on-GCP.html
 
