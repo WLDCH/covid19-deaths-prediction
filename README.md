@@ -30,6 +30,8 @@ The project uses tools and concepts from MLOps. Once a week, every Monday at 20:
 * Data Visualization/Dashboard - Streamlit and Plotly 
 * Model Development, Experiment Tracking, and Registration - Darts and MLflow
 * Model Deployment - Darts and MLflow and Streamlit
+* Tests - Pytest
+* Code formating - Black & isort
 
 # Dashboard
 
