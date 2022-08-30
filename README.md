@@ -2,6 +2,8 @@
 
 This is my final project for both the MLOps Zoomcamp from Data Talks Club. My course works are available in [this other repo](https://github.com/WLDCH/mlops-zoomcamp).
 
+![Dashboard image](./fig/dashboard_screenshot.png)
+
 # Project framing
 
 ## Objective
