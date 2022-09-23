@@ -41,7 +41,6 @@ model_name_to_model_class = {
 }
 
 # TRACKING_URI = "sqlite:///mlflow.db"
-os.environ.get(env_var, 'CSV')
 TRACKING_SERVER_HOST = os.environ.get("TRACKING_SERVER_HOST", "35.210.155.194")
 TRACKING_URI = f"http://{TRACKING_SERVER_HOST}:5000"
 EXPERIMENT_NAME = "covid-deaths-prediction"
