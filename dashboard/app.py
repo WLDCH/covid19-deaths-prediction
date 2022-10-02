@@ -7,12 +7,12 @@ import plotly.graph_objects as go
 import streamlit as st
 from darts import TimeSeries
 
-import predict
+import prediction
 from dashboard.info import info_text, note
 
 
 def predict_deaths():
-    deaths_so_far_minus, deaths_prediction = predict.main()
+    deaths_so_far_minus, deaths_prediction = prediction.main()
     deaths_so_far = deaths_so_far_minus.append(
         TimeSeries.from_series(deaths_prediction)[0]
     )
